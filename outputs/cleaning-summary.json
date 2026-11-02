@@ -1,0 +1,24 @@
+{
+  "raw_rows": 10000,
+  "clean_rows": 9258,
+  "rows_dropped": 742,
+  "rows_changed": 9258,
+  "exact_duplicates_dropped": 93,
+  "duplicate_order_id_dropped": 307,
+  "text_standardised": 1823,
+  "unparseable_date_dropped": 0,
+  "bad_quantity_dropped": 342,
+  "unparseable_price_dropped": 0,
+  "totals_corrected": 435,
+  "emails_blanked": 452,
+  "phones_blanked": 240,
+  "phones_reformatted": 8704,
+  "missing_filled_unknown": 234,
+  "unit_price_outliers_flagged": 479,
+  "clean_total_sales_pkr": 36080444.0,
+  "clean_orders": 9258,
+  "clean_date_range": [
+    "2026-01-01",
+    "2026-06-30"
+  ]
+}
