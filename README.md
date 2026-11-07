@@ -1,5 +1,7 @@
 # P2 — Messy Data Cleaning: 10,000 Dirty Rows → Clean File + Validation Report
 
+**Repo:** https://github.com/mhkh-stock/p2-messy-data-cleaning
+
 **Shop:** ShopKart (fictional) · **Period:** Jan–Jun 2026 · **Status: SAMPLE delivery on DEMO data**
 **Tools:** Python (pandas — the reusable cleaner in `src/clean_data.py`)
 **Deliverable:** `data/processed/orders_clean_SAMPLE.csv` (9,258 clean rows)
