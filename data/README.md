@@ -27,7 +27,8 @@ fictional sample orders for a fictional shop (ShopKart) — no real customers.
 
 1. Drop exact duplicate rows (first copy kept).
 2. Drop later rows re-using an order ID (first copy kept).
-3. Standardise text: trim, collapse spaces, map synonyms to one label.
+3. Standardise text: trim, collapse spaces, map synonyms to one label,
+   title-case city and status ("LAHORE"/"lahore" → "Lahore").
 4. Parse dates to ISO; drop rows with an unparseable date (none in this sample).
 5. Drop rows with a missing, zero or negative quantity.
 6. Strip currency symbols/commas from prices; drop rows with an unparseable price (none in this sample).
@@ -41,6 +42,7 @@ fictional sample orders for a fictional shop (ShopKart) — no real customers.
 - No duplicate rows, no duplicate order IDs.
 - No blank order ID, date, product, category, quantity, price or total.
 - Every date ISO; every total equals quantity × price.
-- No `Rs`/`PKR` text, no synonym labels, no invalid emails or non-+92 phones remain.
+- No `Rs`/`PKR` text, no synonym labels, no mixed-case city/status values,
+  no invalid emails or non-+92 phones remain.
 - Clean totals: 9,258 orders, PKR 36,080,444, 2026-01-01 to 2026-06-30.
 - Drop reconciliation: 93 + 307 + 342 = 742 dropped; 10,000 − 742 = 9,258 clean.

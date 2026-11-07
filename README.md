@@ -29,7 +29,8 @@ overwrite where nobody knows what was deleted.
 | `outputs/validation-report.md` | What was fixed, with counts, and what was deliberately NOT done |
 | `outputs/cleaning-summary.json` | The same counts, machine-readable |
 | `src/clean_data.py` | The reusable pandas cleaner: dirty CSV → clean CSV + report, same counts every run |
-| `src/generate_and_clean.py` | Seeded demo generator (regenerates the dirty file; re-run `clean_data.py` after it to restore the pandas report) |
+| `src/checks.py` | Independent data-quality checks (22 checks, stdlib only — reopens both CSVs and verifies every headline number without running the cleaner) |
+| `src/generate_and_clean.py` | Seeded demo generator (regenerates the dirty file and the clean file with the same counts; re-run `clean_data.py` for the pandas report) |
 | `data/README.md` | Data dictionary: every column, raw vs clean |
 
 ## 3 key findings (from the demo data)
@@ -39,8 +40,9 @@ overwrite where nobody knows what was deleted.
    missing, zero or negative quantity. *So what:* a dashboard built on the raw
    file would have double-counted orders and shown impossible quantities.
 2. **The money columns could not be trusted as typed:** 435 totals did not
-   equal quantity × price, and 976 price cells carried "Rs"/"PKR" text or
-   thousand-commas. Every total in the clean file is recomputed and verified.
+   equal quantity × price, and 1,316 price cells carried "Rs"/"PKR" text or
+   thousand-commas (1,421 total cells the same). Every total in the clean
+   file is recomputed and verified.
    *So what:* any revenue total from the raw file was wrong by an unknown amount.
 3. **Contact data was the weakest part — and it was not guessed:**
    452 invalid emails and 240 bad phone numbers were blanked, never invented.
@@ -67,9 +69,9 @@ the content fixes are the counts in the validation report.
 
 Verification was done by reopening both CSVs independently of the cleaning
 script: no duplicate rows or order IDs, no blank key fields, every date in
-ISO format, every total equal to quantity × price, no currency symbols or
-synonym labels left, and the drop counts reconcile exactly (93 + 307 + 342
-= 742).
+ISO format, every total equal to quantity × price, no currency symbols,
+synonym labels or mixed-case city/status values left, and the drop counts
+reconcile exactly (93 + 307 + 342 = 742).
 
 ## How to run it (under 5 steps)
 
@@ -80,8 +82,10 @@ synonym labels left, and the drop counts reconcile exactly (93 + 307 + 342
 4. To reuse it for a real file: point the cleaner at the real CSV, keep the
    same columns, and adjust the synonym maps (`CATEGORY_MAP`, `PAYMENT_MAP`)
    to that client's labels.
-5. Check the clean file with the same rules: no duplicates, ISO dates,
-   totals reconciled — the report lists every check.
+5. Check the clean file yourself: `python3 src/checks.py` (stdlib only,
+   22 checks — no duplicates, ISO dates, totals reconciled, canonical
+   city/status/payment/category values, every headline number re-verified
+   against the summary). The report lists every check.
 
 ## Tools
 

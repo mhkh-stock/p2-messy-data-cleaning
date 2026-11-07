@@ -18,7 +18,7 @@
 | Invalid email (no @, double @@) | 452 | Blanked — contact data is never invented |
 | Invalid phone (too short, letters) | 240 | Blanked — contact data is never invented |
 | Phone in a different format | 8,704 | Reformatted to +92 standard |
-| Messy case / spacing / synonym labels | 1,823 | Standardised (e.g. COD → Cash on Delivery, Elec → Electronics) |
+| Messy case / spacing / synonym labels | 2,193 | Standardised (e.g. COD → Cash on Delivery, Elec → Electronics) |
 | Missing city / payment / status | 234 | Filled with "Unknown" (label only, not invented data) |
 | Unit-price outliers (IQR rule) | 479 | Flagged only — NOT deleted, so real high-value sales are not hidden |
 | **Total rows changed in any way** | **9,258** | |
@@ -29,7 +29,8 @@
 - No duplicate rows, no duplicate order IDs.
 - No blank order ID, order date, product, category, quantity, price or total.
 - Every date is ISO format (YYYY-MM-DD); every total equals quantity × price.
-- No currency symbols, commas-in-numbers, or synonym labels remain.
+- No currency symbols, commas-in-numbers, synonym labels, or mixed-case
+  city/status values remain.
 - Clean totals: 9,258 orders, PKR 36,080,444.00
   total sales, 2026-01-01 to 2026-06-30.
 

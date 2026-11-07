@@ -185,12 +185,15 @@ def main():
         w.writerows(dirty)
 
     # ---- cleaning ----
+    # Key order matches src/clean_data.py, so both scripts write the same
+    # summary (byte-for-byte) for the same input.
     counts = {k: 0 for k in [
         "exact_duplicates_dropped", "duplicate_order_id_dropped",
-        "unparseable_date_dropped", "bad_quantity_dropped",
-        "unparseable_price_dropped", "totals_corrected", "emails_blanked",
-        "phones_blanked", "phones_reformatted", "text_standardised",
-        "missing_filled_unknown"]}
+        "text_standardised", "unparseable_date_dropped",
+        "bad_quantity_dropped", "unparseable_price_dropped",
+        "totals_corrected", "emails_blanked", "phones_blanked",
+        "phones_reformatted", "missing_filled_unknown",
+        "unit_price_outliers_flagged"]}
     seen_ids, seen_order_ids, clean, changed_ids = set(), set(), [], set()
     with open(RAW, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
@@ -210,12 +213,19 @@ def main():
         for c in ["customer_name", "city", "product", "category",
                   "payment_method", "status"]:
             row[c] = " ".join(str(row[c]).split())
+        # Case normalisation: city names and statuses are proper nouns /
+        # labels, so title case is the one canonical form ("LAHORE"/"lahore"
+        # -> "Lahore", "DELIVERED"/"delivered" -> "Delivered"). Without
+        # this, a pivot by city or status would split one value into three.
+        row["city"] = row["city"].title()
         row["category"] = CATEGORY_MAP.get(row["category"].lower(),
                                            row["category"].title()
                                            if row["category"] else row["category"])
         row["payment_method"] = PAYMENT_MAP.get(row["payment_method"].lower(),
                                                 row["payment_method"])
-        row["status"] = STATUS_MAP.get(row["status"].lower(), row["status"])
+        row["status"] = STATUS_MAP.get(row["status"].lower(),
+                                       row["status"].title()
+                                       if row["status"] else row["status"])
         if any(row[c] != orig[c] for c in ["city", "category",
                                            "payment_method", "status"]):
             counts["text_standardised"] += 1
@@ -272,10 +282,28 @@ def main():
 
     clean.sort(key=lambda r: (r["order_date"], r["order_id"]))
     CLEAN.parent.mkdir(parents=True, exist_ok=True)
+    # lineterminator="\n": the pandas cleaner writes LF, so the generator
+    # must too — otherwise the two scripts produce different bytes for the
+    # same clean file. (The raw file keeps the csv module's default CRLF,
+    # so regenerating it stays byte-identical to the shipped raw file.)
     with open(CLEAN, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        w = csv.DictWriter(f, fieldnames=COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows(clean)
+
+    # Outlier flag (IQR on unit_price, same rule as src/clean_data.py):
+    # counted, never deleted.
+    prices = sorted(float(r["unit_price"]) for r in clean)
+
+    def _q(p):
+        i = (len(prices) - 1) * p
+        lo = int(i)
+        frac = i - lo
+        return prices[lo] * (1 - frac) + prices[lo + 1] * frac
+
+    q1, q3 = _q(0.25), _q(0.75)
+    counts["unit_price_outliers_flagged"] = sum(
+        1 for p in prices if p > q3 + 1.5 * (q3 - q1))
 
     total_sales = round(sum(float(r["total_amount"]) for r in clean), 2)
     summary = {"raw_rows": len(rows), "clean_rows": len(clean),
@@ -314,6 +342,7 @@ def build_report(s):
 | Phone in a different format | {s['phones_reformatted']:,} | Reformatted to +92 standard |
 | Messy case / spacing / synonym labels | {s['text_standardised']:,} | Standardised (e.g. COD → Cash on Delivery, Elec → Electronics) |
 | Missing city / payment / status | {s['missing_filled_unknown']:,} | Filled with "Unknown" (label only, not invented data) |
+| Unit-price outliers (IQR rule) | {s['unit_price_outliers_flagged']:,} | Flagged only — NOT deleted, so real high-value sales are not hidden |
 | **Total rows changed in any way** | **{s['rows_changed']:,}** | |
 | **Total rows dropped** | **{s['rows_dropped']:,}** | |
 
@@ -322,7 +351,8 @@ def build_report(s):
 - No duplicate rows, no duplicate order IDs.
 - No blank order ID, order date, product, category, quantity, price or total.
 - Every date is ISO format (YYYY-MM-DD); every total equals quantity × price.
-- No currency symbols, commas-in-numbers, or synonym labels remain.
+- No currency symbols, commas-in-numbers, synonym labels, or mixed-case
+  city/status values remain.
 - Clean totals: {s['clean_orders']:,} orders, PKR {s['clean_total_sales_pkr']:,.2f}
   total sales, {s['clean_date_range'][0]} to {s['clean_date_range'][1]}.
 

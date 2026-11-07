@@ -103,12 +103,17 @@ def main(argv=None):
     for col in ["customer_name", "city", "product", "category",
                 "payment_method", "status"]:
         df[col] = df[col].str.strip().str.replace(r"\s+", " ", regex=True)
+    # Case normalisation: city names and statuses are proper nouns / labels,
+    # so title case is the one canonical form ("LAHORE"/"lahore" -> "Lahore",
+    # "DELIVERED"/"delivered" -> "Delivered"). Without this, a pivot by city
+    # or status would split one value into three.
+    df["city"] = df["city"].str.title()
+    df["status"] = df["status"].apply(
+        lambda v: STATUS_MAP.get(v.lower(), v.title() if v else v))
     df["category"] = df["category"].apply(
         lambda v: CATEGORY_MAP.get(v.lower(), v.title() if v else v))
     df["payment_method"] = df["payment_method"].apply(
         lambda v: PAYMENT_MAP.get(v.lower(), v))
-    df["status"] = df["status"].apply(
-        lambda v: STATUS_MAP.get(v.lower(), v))
     counts["text_standardised"] = int(
         (df[["city", "category", "payment_method", "status"]]
          != orig[["city", "category", "payment_method", "status"]])
@@ -227,7 +232,8 @@ def build_report(s):
 - No duplicate rows, no duplicate order IDs.
 - No blank order ID, order date, product, category, quantity, price or total.
 - Every date is ISO format (YYYY-MM-DD); every total equals quantity × price.
-- No currency symbols, commas-in-numbers, or synonym labels remain.
+- No currency symbols, commas-in-numbers, synonym labels, or mixed-case
+  city/status values remain.
 - Clean totals: {s['clean_orders']:,} orders, PKR {s['clean_total_sales_pkr']:,.2f}
   total sales, {s['clean_date_range'][0]} to {s['clean_date_range'][1]}.
 
